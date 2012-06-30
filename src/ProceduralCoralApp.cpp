@@ -3,6 +3,7 @@
 #include "cinder/gl/gl.h"
 #include "cinder/ImageIo.h"
 #include "cinder/gl/Texture.h"
+#include "CGAL/basic.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -13,7 +14,7 @@ class ProceduralCoralApp : public AppBasic {
 private: // members
 	gl::Texture m_carletonLogo;
 private: // methods
-	void drawLogo();
+	void drawCarletonLogo();
 public: // methods
 	void setup();
 	void mouseDown( MouseEvent event );	
@@ -23,11 +24,11 @@ public: // methods
 
 void ProceduralCoralApp::setup()
 {
-	// set opengl options
 	gl::enableAlphaBlending();
 
-	// load resources
-	m_carletonLogo = gl::Texture( loadImage( loadResource(RES_CARLETON_LOGO) ) );
+	const DataSourceRef &logoResource = loadResource( RES_CARLETON_LOGO );
+	const ImageSourceRef &logoImage = loadImage( logoResource );
+	m_carletonLogo = gl::Texture( logoImage );
 }
 
 void ProceduralCoralApp::mouseDown( MouseEvent event )
@@ -40,17 +41,18 @@ void ProceduralCoralApp::update()
 
 void ProceduralCoralApp::draw()
 {
-	gl::clear( Color( 0.5f, 0.5f, 0.5f ) ); 
-	drawLogo();
+	Color gray( 0.5f, 0.5f, 0.5f );
+	gl::clear( gray ); 
+	drawCarletonLogo();
 }
 
-void ProceduralCoralApp::drawLogo()
+void ProceduralCoralApp::drawCarletonLogo()
 {
 	Area logoBounds = m_carletonLogo.getBounds();
 
-	float logoScale = 0.5f;
-	logoBounds.setX2( logoBounds.getX2() * logoScale );
-	logoBounds.setY2( logoBounds.getY2() * logoScale );
+	float logoScale = 0.75f;
+	logoBounds.setX2( static_cast<int>( logoBounds.getX2() * logoScale ) );
+	logoBounds.setY2( static_cast<int>( logoBounds.getY2() * logoScale ) );
 
 	const Vec2i &windowSize = getWindowSize();
 	const Vec2i &logoSize = logoBounds.getSize();

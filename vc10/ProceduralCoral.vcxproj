@@ -47,22 +47,23 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\include;..\..\..\Libraries\cinder_0.8.4_vc2010\include;..\..\..\Libraries\cinder_0.8.4_vc2010\boost</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\CGAL-4.0\include;..\include;..\..\..\Libraries\cinder_master\include;..\..\..\Libraries\cinder_0.8.4_vc2010\boost</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>..\..\..\Libraries\cinder_0.8.4_vc2010\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>cinder_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Libraries\cinder_0.8.4_vc2010\lib;..\..\..\Libraries\cinder_0.8.4_vc2010\lib\msw;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cinder_d.lib;CGAL_Core-vc100-mt-gd-4.0.lib;CGAL_ImageIO-vc100-mt-gd-4.0.lib;CGAL-vc100-mt-gd-4.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Libraries\CGAL-4.0\lib;..\..\..\Libraries\cinder_master\lib;..\..\..\Libraries\cinder_0.8.4_vc2010\lib\msw;..\..\..\Libraries\boost_1_48\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -78,13 +79,14 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\include;..\..\..\Libraries\cinder_0.8.4_vc2010\include;..\..\..\Libraries\cinder_0.8.4_vc2010\boost</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\CGAL-4.0\include;..\include;..\..\..\Libraries\cinder_master\include;..\..\..\Libraries\cinder_0.8.4_vc2010\boost</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -93,8 +95,8 @@
       <AdditionalIncludeDirectories>..\..\..\Libraries\cinder_0.8.4_vc2010\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>cinder.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Libraries\cinder_0.8.4_vc2010\lib;..\..\..\Libraries\cinder_0.8.4_vc2010\lib\msw;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cinder.lib;CGAL_Core-vc100-mt-4.0.lib;CGAL-vc100-mt-4.0.lib;CGAL_ImageIO-vc100-mt-4.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Libraries\CGAL-4.0\lib;..\..\..\Libraries\cinder_master\lib;..\..\..\Libraries\cinder_0.8.4_vc2010\lib\msw;..\..\..\Libraries\boost_1_48\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <SubSystem>Windows</SubSystem>
