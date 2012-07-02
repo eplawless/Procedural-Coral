@@ -6,15 +6,18 @@
 #include <cinder/gl/gl.h>
 #include <cinder/gl/Texture.h>
 #include <cinder/ImageIo.h>
+#include <cinder/Rand.h>
 
 #include <CGAL/basic.h>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 
 #include <utility>
 #include <string>
 #include <sstream>
+#include <ctime>
 
 // - using declarations:
 using namespace ci;

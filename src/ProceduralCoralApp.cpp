@@ -12,6 +12,7 @@ private: // methods
 	void drawCarletonLogo();
 	void drawGraph();
 public: // methods
+	void prepareSettings( Settings *settings );
 	void setup();
 	void mouseDown( MouseEvent event );	
 	void update();
@@ -27,29 +28,24 @@ void ProceduralCoralApp::setupCarletonLogo()
 
 void ProceduralCoralApp::setupGraph()
 {
-	// Make convenient labels for the vertices
-	enum { A, B, C, D, E, N };
-	const int numVertices = N;
-	const char* name = "ABCDE";
-
-	// writing out the edges in the graph
-	Edge edgeArray[] = {
-		Edge(A,B), Edge(A,D), Edge(C,A), Edge(D,C), 
-		Edge(C,E), Edge(B,D), Edge(D,E) };
-	const int numEdges = sizeof( edgeArray ) / sizeof( Edge );
+	Rand prng( time( NULL ) );
+	const Vec2i &windowSize = getWindowSize();
+	const Graph::vertices_size_type numVertices = 100;
+	const Vec2i margin( 20, 20 );
 
 	// initialize the graph
-	m_graph = Graph( edgeArray, edgeArray + numEdges, numVertices );
+	m_graph = Graph( numVertices );
 
 	// set vertex properties
-	for ( int idx = 0; idx < numVertices; ++idx ) {
-		int x = 30 + 50 * ( idx % 3 );
-		int y = 10 + 30 * ( idx / 3 );
-		m_graph[idx].position = Point( x, y );
-
-		std::stringstream nameStream;
-		nameStream << "Vertex " << idx;
-		m_graph[idx].name = nameStream.str();
+	Graph::vertex_iterator vi, vi_end; 
+	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
+		vi != vi_end; ++vi ) 
+	{
+		GraphVertexInfo &vertexInfo = m_graph[*vi];
+		int x = prng.nextInt( margin.x, windowSize.x - margin.x );
+		int y = prng.nextInt( margin.y, windowSize.y - margin.y );
+		vertexInfo.position = Point( x, y );
+		vertexInfo.name = boost::lexical_cast<std::string>(*vi);
 	}
 }
 
@@ -68,6 +64,8 @@ void ProceduralCoralApp::mouseDown( MouseEvent event )
 
 void ProceduralCoralApp::update()
 {
+	// TODO: build/animate delaunay triangulation
+	// TODO: build/animate min-cuts
 }
 
 void ProceduralCoralApp::drawGraph()
@@ -131,11 +129,17 @@ void ProceduralCoralApp::drawCarletonLogo()
 
 void ProceduralCoralApp::draw()
 {
-	Color gray( 0.5f, 0.5f, 0.5f );
-	gl::clear( gray ); 
-	drawCarletonLogo();
+	gl::clear( Color( 0.5f, 0.5f, 0.5f ) ); 
 	drawGraph();
+	drawCarletonLogo();
 }
+
+void ProceduralCoralApp::prepareSettings( Settings *settings )
+{
+	settings->setResizable( false );
+	settings->setTitle( "Procedural Coral - Eric Lawless" );
+}
+
 
 
 CINDER_APP_BASIC( ProceduralCoralApp, RendererGl( RendererGl::AA_MSAA_8 ) )
