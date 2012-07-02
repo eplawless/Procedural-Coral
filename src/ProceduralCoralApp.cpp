@@ -1,4 +1,5 @@
 #include "StdAfx.h"
+#include "Graph.h"
 
 class ProceduralCoralApp : public AppBasic {
 private: // members
@@ -71,7 +72,9 @@ void ProceduralCoralApp::update()
 
 void ProceduralCoralApp::drawGraph()
 {
-	typedef Graph::vertices_size_type num_t;
+	typedef Graph::vertices_size_type num_vertices_t;
+	typedef Graph::edges_size_type num_edges_t;
+
 	const float radius = 5.0f;
 	const float graphScale = 1.0f;
 	const float scaledRadius = radius * graphScale;
@@ -80,16 +83,29 @@ void ProceduralCoralApp::drawGraph()
 	const Font font( "Arial", 16 * graphScale );
 
 	// draw vertices
-	num_t numVertices = boost::num_vertices( m_graph );
-	for ( num_t idx = 0; idx < numVertices; ++idx ) {
-		const Point &position = m_graph[idx].position;
-		Point scaledPosition = position * graphScale;
+	Graph::vertex_iterator vi, vi_end;
+	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
+		vi != vi_end; ++vi ) 
+	{
+		const GraphVertexInfo &vertexInfo = m_graph[*vi];
+		Point scaledPosition = vertexInfo.position * graphScale;
 		gl::drawSolidCircle( scaledPosition, scaledRadius );
 		if (m_drawLabels) {
-			const std::string &name = m_graph[idx].name;
-			gl::drawStringCentered( name, scaledPosition + textOffset, 
-				textColor, font );
+			gl::drawStringCentered( vertexInfo.name, 
+				scaledPosition + textOffset, textColor, font );
 		}
+	}
+
+	// draw edges
+	Graph::edge_iterator ei, ei_end;
+	for ( boost::tie( ei, ei_end ) = boost::edges( m_graph ); 
+		ei != ei_end; ++ei )
+	{
+		const GraphVertexInfo &sourceInfo = m_graph[ei->m_source];
+		const GraphVertexInfo &targetInfo = m_graph[ei->m_target];
+		Point scaledSourcePosition = sourceInfo.position * graphScale;
+		Point scaledTargetPosition = targetInfo.position * graphScale;
+		gl::drawLine( scaledSourcePosition, scaledTargetPosition );
 	}
 }
 

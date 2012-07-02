@@ -21,16 +21,3 @@ using namespace ci;
 using namespace ci::app;
 using namespace std;
 using namespace cinder;
-
-// - typedefs: 
-typedef std::pair<int, int> Edge;
-typedef cinder::Vec2i Point;
-struct GraphVertexInfo {
-	Point position;
-	std::string name;
-};
-typedef boost::adjacency_list<
-	boost::vecS,
-	boost::vecS,
-	boost::bidirectionalS,
-	GraphVertexInfo> Graph;
