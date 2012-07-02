@@ -78,11 +78,27 @@ void ProceduralCoralApp::drawGraph()
 	const float radius = 5.0f;
 	const float graphScale = 1.0f;
 	const float scaledRadius = radius * graphScale;
+	const Color edgeColor( cinder::CM_RGB, 1.0f, 0.8f, 0.0f );
+	const Color vertexColor( cinder::CM_RGB, 1.0f, 1.0f, 1.0f );
 	const Vec2i textOffset( 0, static_cast<int>( scaledRadius ) );
 	const Color textColor( cinder::CM_RGB, 0.0f, 0.4f, 0.9f );
 	const Font font( "Arial", 16 * graphScale );
 
+	// draw edges
+	gl::color( edgeColor );
+	Graph::edge_iterator ei, ei_end;
+	for ( boost::tie( ei, ei_end ) = boost::edges( m_graph ); 
+		ei != ei_end; ++ei )
+	{
+		const GraphVertexInfo &sourceInfo = m_graph[ei->m_source];
+		const GraphVertexInfo &targetInfo = m_graph[ei->m_target];
+		Point scaledSourcePosition = sourceInfo.position * graphScale;
+		Point scaledTargetPosition = targetInfo.position * graphScale;
+		gl::drawLine( scaledSourcePosition, scaledTargetPosition );
+	}
+
 	// draw vertices
+	gl::color( vertexColor );
 	Graph::vertex_iterator vi, vi_end;
 	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
 		vi != vi_end; ++vi ) 
@@ -94,18 +110,6 @@ void ProceduralCoralApp::drawGraph()
 			gl::drawStringCentered( vertexInfo.name, 
 				scaledPosition + textOffset, textColor, font );
 		}
-	}
-
-	// draw edges
-	Graph::edge_iterator ei, ei_end;
-	for ( boost::tie( ei, ei_end ) = boost::edges( m_graph ); 
-		ei != ei_end; ++ei )
-	{
-		const GraphVertexInfo &sourceInfo = m_graph[ei->m_source];
-		const GraphVertexInfo &targetInfo = m_graph[ei->m_target];
-		Point scaledSourcePosition = sourceInfo.position * graphScale;
-		Point scaledTargetPosition = targetInfo.position * graphScale;
-		gl::drawLine( scaledSourcePosition, scaledTargetPosition );
 	}
 }
 
