@@ -75,7 +75,7 @@ void ProceduralCoralApp::drawGraph()
 	const float radius = 5.0f;
 	const float graphScale = 1.0f;
 	const float scaledRadius = radius * graphScale;
-	const Vec2i textOffset( 0, scaledRadius );
+	const Vec2i textOffset( 0, static_cast<int>( scaledRadius ) );
 	const Color textColor( cinder::CM_RGB, 0.0f, 0.4f, 0.9f );
 	const Font font( "Arial", 16 * graphScale );
 
