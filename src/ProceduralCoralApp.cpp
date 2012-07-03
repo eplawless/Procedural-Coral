@@ -161,6 +161,7 @@ void ProceduralCoralApp::drawCarletonLogo()
 
 void ProceduralCoralApp::draw()
 {
+	// clear to background color
 	const float lightness = 0.2f;
 	gl::clear( Color( CM_HSV, 0, 0, lightness ) ); 
 
