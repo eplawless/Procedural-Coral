@@ -11,6 +11,7 @@
 #include <CGAL/basic.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Triangulation_2.h>
+#include <CGAL/Delaunay_triangulation_2.h>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/graph/graph_traits.hpp>

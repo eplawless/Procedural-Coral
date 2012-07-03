@@ -18,7 +18,7 @@ Color getVertexColor( GraphVertexType type )
 void triangulate( Graph &graph )
 {
 	typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-	typedef CGAL::Triangulation_2<K>           Triangulation;
+	typedef CGAL::Delaunay_triangulation_2<K>  Triangulation;
 	typedef Triangulation::All_edges_iterator  All_edges_iterator;
 	typedef Triangulation::Edge_iterator       Edge_iterator;
 	typedef Triangulation::Vertex_circulator   Vertex_circulator;
