@@ -30,7 +30,7 @@ void ProceduralCoralApp::setupGraph()
 {
 	Rand prng( time( NULL ) );
 	const Vec2i &windowSize = getWindowSize();
-	static const Graph::vertices_size_type numVertices = 1000;
+	static const Graph::vertices_size_type numVertices = 2000;
 	static const int marginLeft = 15;
 	static const int marginTop = 15;
 	static const int marginRight = 15;
@@ -47,16 +47,21 @@ void ProceduralCoralApp::setupGraph()
 	auto getVertexPosition = [&]( int idxVertex ) -> Vec2i {
 		static const int gridResolution = 4;
 		int x, y;
-		if ( idxVertex <= numFixedAirVertices ) {
+		if ( idxVertex <= numFixedAirVertices ) 
+		{
 			float xScale = ( ( 1.0f * idxVertex ) / numFixedAirVertices );
 			x = marginLeft + ( xScale * ( windowSize.x - marginLeft - marginRight ) );
 			y = marginTop;
-		} else if ( idxVertex >= numVertices - numFixedCoralVertices - 1 ) {
+		}
+		else if ( idxVertex >= numVertices - numFixedCoralVertices - 1 ) 
+		{
 			float xScale = ( ( 1.0f * numVertices - idxVertex - 1 ) 
 				/ numFixedCoralVertices );
 			x = marginLeft + ( xScale * ( windowSize.x - marginLeft - marginRight ) );
 			y = windowSize.y - marginBottom;
-		} else {
+		}
+		else
+		{
 			x = prng.nextInt( marginLeft, windowSize.x - marginRight );
 			y = prng.nextInt( marginTop, windowSize.y - marginBottom );
 		}
@@ -76,7 +81,7 @@ void ProceduralCoralApp::setupGraph()
 		vertexInfo.name = boost::lexical_cast<std::string>( *vi );
 		vertexInfo.type = vertexInfo.position.y <= airMaximum ? TYPE_AIR :
 			              vertexInfo.position.y >= coralMinimum ? TYPE_CORAL :
-			              TYPE_NONE;
+			              static_cast<GraphVertexType>( prng.nextInt(NUM_TYPES) );
 	}
 
 	// create the edges via delaunay triangulation
@@ -114,13 +119,17 @@ void ProceduralCoralApp::drawGraph()
 	static const Font font( "Arial", 16 * graphScale );
 
 	// draw edges
-	gl::color( edgeColor );
 	Graph::edge_iterator ei, ei_end;
 	for ( boost::tie( ei, ei_end ) = boost::edges( m_graph ); 
 		ei != ei_end; ++ei )
 	{
 		const GraphVertexInfo &sourceInfo = m_graph[ei->m_source];
 		const GraphVertexInfo &targetInfo = m_graph[ei->m_target];
+		if ( sourceInfo.type == targetInfo.type ) {
+			gl::color( getVertexColor( sourceInfo.type ) );
+		} else {
+			gl::color( edgeColor );
+		}
 		Vec2i scaledSourcePosition = sourceInfo.position * graphScale;
 		Vec2i scaledTargetPosition = targetInfo.position * graphScale;
 		gl::drawLine( scaledSourcePosition, scaledTargetPosition );
