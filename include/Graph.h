@@ -1,3 +1,5 @@
+// types:
+
 enum GraphVertexType {
 	TYPE_CORAL,
 	TYPE_AIR,
@@ -5,14 +7,10 @@ enum GraphVertexType {
 	NUM_TYPES
 };
 
-Color getVertexColor( GraphVertexType type );
-
 typedef std::pair<int, int> Edge;
-typedef cinder::Vec2i Point;
-
 struct GraphVertexInfo {
 public: // members
-	Point position;
+	Vec2i position;
 	std::string name;
 	GraphVertexType type;
 public: // methods
@@ -29,3 +27,8 @@ typedef boost::adjacency_list<
 	boost::vecS,
 	boost::bidirectionalS,
 	GraphVertexInfo> Graph;
+
+// methods:
+
+Color getVertexColor( GraphVertexType type );
+void triangulate( Graph &graph );
