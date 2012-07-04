@@ -9,6 +9,7 @@ private: // members
 private: // methods
 	void setupCarletonLogo();
 	void setupGraph();
+	void setupGraphSinks();
 	void drawCarletonLogo();
 	void drawGraph();
 public: // methods
@@ -26,49 +27,94 @@ void ProceduralCoralApp::setupCarletonLogo()
 	m_carletonLogo = gl::Texture( logoImage );
 }
 
-void ProceduralCoralApp::setupGraph()
+class VertexPositionHelper
 {
-	Rand prng( time( NULL ) );
-	const Vec2i &windowSize = getWindowSize();
-	static const Graph::vertices_size_type numVertices = 2000;
-	static const int marginLeft = 15;
-	static const int marginTop = 15;
-	static const int marginRight = 15;
-	static const int marginBottom = 65;
-	static const int airMaximum = marginTop + 30;
-	static const int coralMinimum = windowSize.y - marginBottom - 30;
-	static const int numFixedAirVertices = 10;
-	static const int numFixedCoralVertices = 10;
+public: // methods
+	VertexPositionHelper(
+		Rand &prng,
+		int numVertices,
+		int marginTop,
+		int marginBottom,
+		int marginLeft,
+		int marginRight,
+		const Vec2i &windowSize )
+		: m_prng( prng )
+		, m_numVertices( numVertices )
+		, m_marginTop( marginTop )
+		, m_marginBottom( marginBottom )
+		, m_marginLeft( marginLeft )
+		, m_marginRight( marginRight )
+		, m_windowSize( windowSize )
+	{
+	}
 
-	// set up the graph
-	m_graph = Graph( numVertices );
-
-	// helper function for vertex position
-	auto getVertexPosition = [&]( int idxVertex ) -> Vec2i {
+	Vec2i get( int idxVertex )
+	{
 		static const int gridResolution = 4;
+		static const int numFixedAirVertices = 10;
+		static const int numFixedCoralVertices = 10;
+
 		int x, y;
-		if ( idxVertex <= numFixedAirVertices ) 
-		{
+		if ( idxVertex <= numFixedAirVertices ) {
 			float xScale = ( ( 1.0f * idxVertex ) / numFixedAirVertices );
-			x = marginLeft + ( xScale * ( windowSize.x - marginLeft - marginRight ) );
-			y = marginTop;
-		}
-		else if ( idxVertex >= numVertices - numFixedCoralVertices - 1 ) 
-		{
-			float xScale = ( ( 1.0f * numVertices - idxVertex - 1 ) 
+			x = m_marginLeft + ( xScale * 
+				( m_windowSize.x - m_marginLeft - m_marginRight ) );
+			y = m_marginTop;
+		} else if ( idxVertex >= m_numVertices - numFixedCoralVertices - 1 ) {
+			float xScale = ( ( 1.0f * m_numVertices - idxVertex - 1 ) 
 				/ numFixedCoralVertices );
-			x = marginLeft + ( xScale * ( windowSize.x - marginLeft - marginRight ) );
-			y = windowSize.y - marginBottom;
-		}
-		else
-		{
-			x = prng.nextInt( marginLeft, windowSize.x - marginRight );
-			y = prng.nextInt( marginTop, windowSize.y - marginBottom );
+			x = m_marginLeft + ( xScale * 
+				( m_windowSize.x - m_marginLeft - m_marginRight ) );
+			y = m_windowSize.y - m_marginBottom;
+		} else {
+			x = m_prng.nextInt( m_marginLeft, m_windowSize.x - m_marginRight );
+			y = m_prng.nextInt( m_marginTop, m_windowSize.y - m_marginBottom );
 		}
 		x = ( x / gridResolution ) * gridResolution;
 		y = ( y / gridResolution ) * gridResolution;
 		return Vec2i( x, y );
-	};
+	}
+
+private: // members
+	Rand &m_prng;
+	int m_numVertices;
+	int m_marginTop;
+	int m_marginBottom;
+	int m_marginLeft;
+	int m_marginRight;
+	const Vec2i &m_windowSize;
+};
+
+static GraphVertexType getRandomVertexType(
+	Rand &prng,
+	int idxVertex )
+{
+	static const int markedVertexPercent = 10;
+	bool shouldGiveType = prng.nextInt(0, 100) < markedVertexPercent;
+	if ( !shouldGiveType ) {
+		return TYPE_NONE;
+	}
+	return static_cast<GraphVertexType>( prng.nextInt( NUM_TYPES - 1 ) );
+}
+
+void ProceduralCoralApp::setupGraph()
+{
+	Rand prng( static_cast<uint32_t>( time( NULL ) ) );
+	static const Graph::vertices_size_type numVertices = 2000;
+	const Vec2i &windowSize = getWindowSize();
+	static const int marginTop = 15;
+	static const int marginBottom = 65;
+	static const int marginLeft = 15;
+	static const int marginRight = 10;
+	static const int airMaximum = marginTop + 30;
+	static const int coralMinimum = windowSize.y - marginBottom - 30;
+
+	// capture variables
+	VertexPositionHelper vertexPosition( prng, numVertices, marginTop,
+		marginBottom, marginLeft, marginRight, windowSize );
+
+	// set up the graph
+	m_graph = Graph( numVertices );
 
 	// set up each vertex
 	int idxVertex = 0;
@@ -77,15 +123,49 @@ void ProceduralCoralApp::setupGraph()
 		vi != vi_end; ++vi, ++idxVertex ) 
 	{
 		GraphVertexInfo &vertexInfo = m_graph[*vi];
-		vertexInfo.position = getVertexPosition( idxVertex );
+		vertexInfo.position = vertexPosition.get( idxVertex );
 		vertexInfo.name = boost::lexical_cast<std::string>( *vi );
 		vertexInfo.type = vertexInfo.position.y <= airMaximum ? TYPE_AIR :
 			              vertexInfo.position.y >= coralMinimum ? TYPE_CORAL :
-			              static_cast<GraphVertexType>( prng.nextInt(NUM_TYPES) );
+			              getRandomVertexType( prng, idxVertex );
 	}
 
 	// create the edges via delaunay triangulation
 	triangulate( m_graph );
+
+	// pick the first and last vertices as sinks, and connect all of the
+	// vertices of each type to the sinks with crazy weights
+	setupGraphSinks();
+}
+
+void ProceduralCoralApp::setupGraphSinks()
+{
+	Graph::vertex_descriptor airSinkVertex, coralSinkVertex;
+	const Vec2i &windowSize = getWindowSize();
+
+	GraphVertexInfo airSinkVertexInfo;
+	airSinkVertexInfo.position = Vec2i( 5, 5 );
+	airSinkVertexInfo.name = "AirSink";
+	airSinkVertexInfo.type = TYPE_AIR;
+	airSinkVertex = boost::add_vertex( airSinkVertexInfo, m_graph );
+
+	GraphVertexInfo coralSinkVertexInfo;
+	coralSinkVertexInfo.position = Vec2i( 5, windowSize.y - 5 );
+	coralSinkVertexInfo.name = "coralSink";
+	coralSinkVertexInfo.type = TYPE_CORAL;
+	coralSinkVertex = boost::add_vertex( coralSinkVertexInfo, m_graph );
+
+	Graph::vertex_iterator vi, vi_end;
+	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
+		vi != vi_end; ++vi )
+	{
+		GraphVertexInfo &vertexInfo = m_graph[*vi];
+		if ( vertexInfo.type == TYPE_AIR ) {
+			boost::add_edge( airSinkVertex, *vi, m_graph );
+		} else if ( vertexInfo.type == TYPE_CORAL ) {
+			boost::add_edge( coralSinkVertex, *vi, m_graph );
+		}
+	}
 }
 
 void ProceduralCoralApp::setup()
@@ -125,11 +205,8 @@ void ProceduralCoralApp::drawGraph()
 	{
 		const GraphVertexInfo &sourceInfo = m_graph[ei->m_source];
 		const GraphVertexInfo &targetInfo = m_graph[ei->m_target];
-		if ( sourceInfo.type == targetInfo.type ) {
-			gl::color( getVertexColor( sourceInfo.type ) );
-		} else {
-			gl::color( edgeColor );
-		}
+		gl::color( sourceInfo.type == targetInfo.type ?
+			getVertexColor( sourceInfo.type ) : edgeColor );
 		Vec2i scaledSourcePosition = sourceInfo.position * graphScale;
 		Vec2i scaledTargetPosition = targetInfo.position * graphScale;
 		gl::drawLine( scaledSourcePosition, scaledTargetPosition );
@@ -184,6 +261,7 @@ void ProceduralCoralApp::prepareSettings( Settings *settings )
 	settings->setResizable( false );
 	settings->setTitle( "Procedural Coral - Eric Lawless" );
 }
+
 
 
 
