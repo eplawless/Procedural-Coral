@@ -15,14 +15,17 @@ Color getVertexColor( GraphVertexType type )
 	}
 }
 
-void triangulate( Graph &graph )
+void triangulate( Rand &prng, Graph &graph )
 {
 	typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-	typedef CGAL::Delaunay_triangulation_2<K>  Triangulation;
-	typedef Triangulation::Edge_iterator       Edge_iterator;
-	typedef Triangulation::Vertex_handle       Vertex_handle;
-	typedef Triangulation::Point               Point;
-	typedef std::map<Vertex_handle, int>       VertexIndexMap;
+	typedef CGAL::Delaunay_triangulation_2<K>        Triangulation;
+	typedef Triangulation::Edge_iterator             Edge_iterator;
+	typedef Triangulation::Vertex_handle             Vertex_handle;
+	typedef Triangulation::Point                     Point;
+	typedef std::map<Vertex_handle, int>             VertexIndexMap;
+
+	const static int minEdgeWeight = 1;
+	const static int maxEdgeWeight = 20;
 
 	// create the delaunay triangulation
 	Triangulation triangulation;
@@ -32,11 +35,14 @@ void triangulate( Graph &graph )
 	Graph::vertices_size_type numVertices = boost::num_vertices( graph );
 	for ( int idx = 0; idx < numVertices; ++idx ) 
 	{
-		const GraphVertexInfo &vertexInfo = graph[idx];
+		const VertexProperties &vertexInfo = graph[idx];
 		Point position( vertexInfo.position.x, vertexInfo.position.y );
 		Vertex_handle handle = triangulation.insert(position);
 		vertexIndexMap[handle] = idx;
 	}
+
+	// edge weight property map
+	EdgeWeightMap edgeWeightMap = boost::get( &EdgeProperties::weight, graph );
 
 	// read out the edges and add them to BGL
 	Edge_iterator ei_end = triangulation.edges_end();
@@ -49,6 +55,7 @@ void triangulate( Graph &graph )
 		Vertex_handle targetVertex = ei->first->vertex( idxTargetInFace );
 		int idxSource = vertexIndexMap[ sourceVertex ];
 		int idxTarget = vertexIndexMap[ targetVertex ];
-		boost::add_edge( idxSource, idxTarget, graph );
+		EdgeHandle edgeHandle = boost::add_edge( idxSource, idxTarget, graph );
+		edgeWeightMap[edgeHandle.first] = prng.nextInt( 1, 20 );
 	}
 }

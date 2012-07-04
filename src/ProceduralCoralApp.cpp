@@ -122,7 +122,7 @@ void ProceduralCoralApp::setupGraph()
 	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
 		vi != vi_end; ++vi, ++idxVertex ) 
 	{
-		GraphVertexInfo &vertexInfo = m_graph[*vi];
+		VertexProperties &vertexInfo = m_graph[*vi];
 		vertexInfo.position = vertexPosition.get( idxVertex );
 		vertexInfo.name = boost::lexical_cast<std::string>( *vi );
 		vertexInfo.type = vertexInfo.position.y <= airMaximum ? TYPE_AIR :
@@ -131,7 +131,7 @@ void ProceduralCoralApp::setupGraph()
 	}
 
 	// create the edges via delaunay triangulation
-	triangulate( m_graph );
+	triangulate( prng, m_graph );
 
 	// pick the first and last vertices as sinks, and connect all of the
 	// vertices of each type to the sinks with crazy weights
@@ -143,28 +143,34 @@ void ProceduralCoralApp::setupGraphSinks()
 	Graph::vertex_descriptor airSinkVertex, coralSinkVertex;
 	const Vec2i &windowSize = getWindowSize();
 
-	GraphVertexInfo airSinkVertexInfo;
+	VertexProperties airSinkVertexInfo;
 	airSinkVertexInfo.position = Vec2i( 5, 5 );
 	airSinkVertexInfo.name = "AirSink";
 	airSinkVertexInfo.type = TYPE_AIR;
 	airSinkVertex = boost::add_vertex( airSinkVertexInfo, m_graph );
 
-	GraphVertexInfo coralSinkVertexInfo;
+	VertexProperties coralSinkVertexInfo;
 	coralSinkVertexInfo.position = Vec2i( 5, windowSize.y - 5 );
 	coralSinkVertexInfo.name = "coralSink";
 	coralSinkVertexInfo.type = TYPE_CORAL;
 	coralSinkVertex = boost::add_vertex( coralSinkVertexInfo, m_graph );
 
+	EdgeWeightMap edgeWeightMap = boost::get( &EdgeProperties::weight, m_graph );
+
 	Graph::vertex_iterator vi, vi_end;
 	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
 		vi != vi_end; ++vi )
 	{
-		GraphVertexInfo &vertexInfo = m_graph[*vi];
+		EdgeHandle sinkEdgeHandle;
+		VertexProperties &vertexInfo = m_graph[*vi];
 		if ( vertexInfo.type == TYPE_AIR ) {
-			boost::add_edge( airSinkVertex, *vi, m_graph );
+			sinkEdgeHandle = boost::add_edge( airSinkVertex, *vi, m_graph );
 		} else if ( vertexInfo.type == TYPE_CORAL ) {
-			boost::add_edge( coralSinkVertex, *vi, m_graph );
+			sinkEdgeHandle = boost::add_edge( coralSinkVertex, *vi, m_graph );
+		} else {
+			continue;
 		}
+		edgeWeightMap[sinkEdgeHandle.first] = 99999;
 	}
 }
 
@@ -203,8 +209,8 @@ void ProceduralCoralApp::drawGraph()
 	for ( boost::tie( ei, ei_end ) = boost::edges( m_graph ); 
 		ei != ei_end; ++ei )
 	{
-		const GraphVertexInfo &sourceInfo = m_graph[ei->m_source];
-		const GraphVertexInfo &targetInfo = m_graph[ei->m_target];
+		const VertexProperties &sourceInfo = m_graph[ei->m_source];
+		const VertexProperties &targetInfo = m_graph[ei->m_target];
 		gl::color( sourceInfo.type == targetInfo.type ?
 			getVertexColor( sourceInfo.type ) : edgeColor );
 		Vec2i scaledSourcePosition = sourceInfo.position * graphScale;
@@ -217,7 +223,7 @@ void ProceduralCoralApp::drawGraph()
 	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
 		vi != vi_end; ++vi ) 
 	{
-		const GraphVertexInfo &vertexInfo = m_graph[*vi];
+		const VertexProperties &vertexInfo = m_graph[*vi];
 		gl::color( getVertexColor( vertexInfo.type ) );
 		Vec2i scaledPosition = vertexInfo.position * graphScale;
 		gl::drawSolidCircle( scaledPosition, scaledRadius );

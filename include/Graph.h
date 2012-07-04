@@ -8,27 +8,28 @@ enum GraphVertexType {
 };
 
 typedef std::pair<int, int> Edge;
-struct GraphVertexInfo {
-public: // members
+
+struct VertexProperties {
 	Vec2i position;
 	std::string name;
 	GraphVertexType type;
-public: // methods
-	GraphVertexInfo() 
-		: position( 0, 0 )
-		, name( "" )
-		, type( TYPE_NONE )
-	{
-	}
+};
+
+struct EdgeProperties {
+	int weight;
 };
 
 typedef boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
 	boost::bidirectionalS,
-	GraphVertexInfo> Graph;
+	VertexProperties,
+	EdgeProperties> Graph;
+
+typedef std::pair<Graph::edge_descriptor, bool> EdgeHandle;
+typedef boost::property_map<Graph, int EdgeProperties::*>::type EdgeWeightMap;
 
 // methods:
 
 Color getVertexColor( GraphVertexType type );
-void triangulate( Graph &graph );
+void triangulate( Rand &prng, Graph &graph );
