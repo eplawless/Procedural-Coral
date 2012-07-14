@@ -5,11 +5,14 @@ class ProceduralCoralApp : public AppBasic {
 private: // members
 	gl::Texture m_carletonLogo;
 	Graph m_graph;
+	Graph::vertex_descriptor m_airSinkVertex;
+	Graph::vertex_descriptor m_coralSourceVertex;
 	bool m_drawLabels;
 private: // methods
 	void setupCarletonLogo();
 	void setupGraph();
 	void setupGraphSinks();
+	void separateAirAndCoral();
 	void drawCarletonLogo();
 	void drawGraph();
 public: // methods
@@ -119,15 +122,16 @@ void ProceduralCoralApp::setupGraph()
 	// set up each vertex
 	int idxVertex = 0;
 	Graph::vertex_iterator vi, vi_end; 
+	VertexNameMap vertexNameMap = boost::get( boost::vertex_name_t(), m_graph );
 	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
 		vi != vi_end; ++vi, ++idxVertex ) 
 	{
-		VertexProperties &vertexInfo = m_graph[*vi];
+		VertexInfo &vertexInfo = boost::get( VertexInfoTag(), m_graph, *vi );
 		vertexInfo.position = vertexPosition.get( idxVertex );
-		vertexInfo.name = boost::lexical_cast<std::string>( *vi );
 		vertexInfo.type = vertexInfo.position.y <= airMaximum ? TYPE_AIR :
 			              vertexInfo.position.y >= coralMinimum ? TYPE_CORAL :
 			              getRandomVertexType( prng, idxVertex );
+		vertexNameMap[ *vi ] = boost::lexical_cast<std::string>( *vi );
 	}
 
 	// create the edges via delaunay triangulation
@@ -136,42 +140,67 @@ void ProceduralCoralApp::setupGraph()
 	// pick the first and last vertices as sinks, and connect all of the
 	// vertices of each type to the sinks with crazy weights
 	setupGraphSinks();
+
+	// separate air/coral
+	separateAirAndCoral();
 }
 
 void ProceduralCoralApp::setupGraphSinks()
 {
-	Graph::vertex_descriptor airSinkVertex, coralSinkVertex;
 	const Vec2i &windowSize = getWindowSize();
 
-	VertexProperties airSinkVertexInfo;
+	// create air sink vertex
+	VertexInfo airSinkVertexInfo;
 	airSinkVertexInfo.position = Vec2i( 5, 5 );
-	airSinkVertexInfo.name = "AirSink";
 	airSinkVertexInfo.type = TYPE_AIR;
-	airSinkVertex = boost::add_vertex( airSinkVertexInfo, m_graph );
+	m_airSinkVertex = boost::add_vertex( airSinkVertexInfo, m_graph );
 
-	VertexProperties coralSinkVertexInfo;
+	// create coral sink vertex
+	VertexInfo coralSinkVertexInfo;
 	coralSinkVertexInfo.position = Vec2i( 5, windowSize.y - 5 );
-	coralSinkVertexInfo.name = "coralSink";
 	coralSinkVertexInfo.type = TYPE_CORAL;
-	coralSinkVertex = boost::add_vertex( coralSinkVertexInfo, m_graph );
+	m_coralSourceVertex = boost::add_vertex( coralSinkVertexInfo, m_graph );
 
-	EdgeWeightMap edgeWeightMap = boost::get( &EdgeProperties::weight, m_graph );
+	VertexNameMap vertexNameMap = boost::get( boost::vertex_name_t(), m_graph );
+	vertexNameMap[ m_coralSourceVertex ] = "CoralSource";
+	vertexNameMap[ m_airSinkVertex ] = "AirSink";
 
+	auto edgeWeightMap = boost::get( boost::edge_capacity, m_graph );
+	auto edgeReverseMap = boost::get( boost::edge_reverse, m_graph );
+
+	// create high-weight edges between sinks and the members of each set
 	Graph::vertex_iterator vi, vi_end;
 	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
 		vi != vi_end; ++vi )
 	{
-		EdgeHandle sinkEdgeHandle;
-		VertexProperties &vertexInfo = m_graph[*vi];
-		if ( vertexInfo.type == TYPE_AIR ) {
-			sinkEdgeHandle = boost::add_edge( airSinkVertex, *vi, m_graph );
-		} else if ( vertexInfo.type == TYPE_CORAL ) {
-			sinkEdgeHandle = boost::add_edge( coralSinkVertex, *vi, m_graph );
-		} else {
+		VertexInfo &vertexInfo = boost::get( VertexInfoTag(), m_graph, *vi );
+		if ( vertexInfo.type == TYPE_NONE ) {
 			continue;
 		}
-		edgeWeightMap[sinkEdgeHandle.first] = 99999;
+
+		EdgeHandle edge, reverseEdge;
+		if ( vertexInfo.type == TYPE_AIR ) {
+			edge = boost::add_edge( *vi, m_airSinkVertex, m_graph );
+			reverseEdge = boost::add_edge( m_airSinkVertex, *vi, m_graph );
+		} else if ( vertexInfo.type == TYPE_CORAL ) {
+			edge = boost::add_edge( m_coralSourceVertex, *vi, m_graph );
+			reverseEdge = boost::add_edge( *vi, m_coralSourceVertex, m_graph );
+		}
+
+		edgeReverseMap[ edge.first ] = reverseEdge.first;
+		edgeReverseMap[ reverseEdge.first ] = edge.first;
+
+		edgeWeightMap[ edge.first ] = 99999;
+		edgeWeightMap[ reverseEdge.first ] = 99999;
 	}
+}
+
+void ProceduralCoralApp::separateAirAndCoral()
+{
+	boost::boykov_kolmogorov_max_flow(
+		m_graph,
+		m_coralSourceVertex,
+		m_airSinkVertex );
 }
 
 void ProceduralCoralApp::setup()
@@ -188,7 +217,6 @@ void ProceduralCoralApp::mouseDown( MouseEvent event )
 
 void ProceduralCoralApp::update()
 {
-	// TODO: build/animate min-cuts
 }
 
 void ProceduralCoralApp::drawGraph()
@@ -209,8 +237,10 @@ void ProceduralCoralApp::drawGraph()
 	for ( boost::tie( ei, ei_end ) = boost::edges( m_graph ); 
 		ei != ei_end; ++ei )
 	{
-		const VertexProperties &sourceInfo = m_graph[ei->m_source];
-		const VertexProperties &targetInfo = m_graph[ei->m_target];
+		auto sourceVertex = boost::source( *ei, m_graph );
+		auto targetVertex = boost::target( *ei, m_graph );
+		const VertexInfo &sourceInfo = boost::get( VertexInfoTag(), m_graph, sourceVertex );
+		const VertexInfo &targetInfo = boost::get( VertexInfoTag(), m_graph, targetVertex );
 		gl::color( sourceInfo.type == targetInfo.type ?
 			getVertexColor( sourceInfo.type ) : edgeColor );
 		Vec2i scaledSourcePosition = sourceInfo.position * graphScale;
@@ -219,16 +249,17 @@ void ProceduralCoralApp::drawGraph()
 	}
 
 	// draw vertices
+	VertexNameMap vertexNameMap = boost::get( boost::vertex_name_t(), m_graph );
 	Graph::vertex_iterator vi, vi_end;
 	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
 		vi != vi_end; ++vi ) 
 	{
-		const VertexProperties &vertexInfo = m_graph[*vi];
+		const VertexInfo &vertexInfo = boost::get( VertexInfoTag(), m_graph, *vi );
 		gl::color( getVertexColor( vertexInfo.type ) );
 		Vec2i scaledPosition = vertexInfo.position * graphScale;
 		gl::drawSolidCircle( scaledPosition, scaledRadius );
 		if (m_drawLabels) {
-			gl::drawStringCentered( vertexInfo.name, 
+			gl::drawStringCentered( vertexNameMap[*vi], 
 				scaledPosition + textOffset, textColor, font );
 		}
 	}
@@ -267,8 +298,5 @@ void ProceduralCoralApp::prepareSettings( Settings *settings )
 	settings->setResizable( false );
 	settings->setTitle( "Procedural Coral - Eric Lawless" );
 }
-
-
-
 
 CINDER_APP_BASIC( ProceduralCoralApp, RendererGl( RendererGl::AA_MSAA_8 ) )

@@ -17,6 +17,11 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/graph/push_relabel_max_flow.hpp>
+#include <boost/graph/stoer_wagner_min_cut.hpp>
+#include <boost/graph/boykov_kolmogorov_max_flow.hpp>
+#include <boost/graph/one_bit_color_map.hpp>
+#include <boost/graph/reverse_graph.hpp>
 
 #include <utility>
 #include <string>

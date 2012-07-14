@@ -1,6 +1,9 @@
 #include "StdAfx.h"
 #include "Graph.h"
 
+std::size_t const VertexInfoTag::num = (std::size_t)&VertexInfoTag::num;
+std::size_t const EdgeInfoTag::num = (std::size_t)&EdgeInfoTag::num;
+
 Color getVertexColor( GraphVertexType type )
 {
 	static const Color coralColor( CM_RGB, 1.0f, 0.0f, 0.0f );
@@ -35,16 +38,17 @@ void triangulate( Rand &prng, Graph &graph )
 	Graph::vertices_size_type numVertices = boost::num_vertices( graph );
 	for ( int idx = 0; idx < numVertices; ++idx ) 
 	{
-		const VertexProperties &vertexInfo = graph[idx];
+		const VertexInfo &vertexInfo = boost::get( VertexInfoTag(), graph, idx );
 		Point position( vertexInfo.position.x, vertexInfo.position.y );
-		Vertex_handle handle = triangulation.insert(position);
-		vertexIndexMap[handle] = idx;
+		Vertex_handle handle = triangulation.insert( position );
+		vertexIndexMap[ handle ] = idx;
 	}
 
 	// edge weight property map
-	EdgeWeightMap edgeWeightMap = boost::get( &EdgeProperties::weight, graph );
+	auto edgeWeightMap = boost::get( boost::edge_capacity, graph );
 
 	// read out the edges and add them to BGL
+	EdgeReverseMap edgeReverseMap = boost::get( boost::edge_reverse, graph );
 	Edge_iterator ei_end = triangulation.edges_end();
 	for (Edge_iterator ei = triangulation.edges_begin(); 
 		ei != ei_end; ++ei)
@@ -55,7 +59,12 @@ void triangulate( Rand &prng, Graph &graph )
 		Vertex_handle targetVertex = ei->first->vertex( idxTargetInFace );
 		int idxSource = vertexIndexMap[ sourceVertex ];
 		int idxTarget = vertexIndexMap[ targetVertex ];
-		EdgeHandle edgeHandle = boost::add_edge( idxSource, idxTarget, graph );
-		edgeWeightMap[edgeHandle.first] = prng.nextInt( 1, 20 );
+		EdgeHandle forwardEdge = boost::add_edge( idxSource, idxTarget, graph );
+		EdgeHandle backwardEdge = boost::add_edge( idxTarget, idxSource, graph );
+		edgeReverseMap[ forwardEdge.first ] = backwardEdge.first;
+		edgeReverseMap[ backwardEdge.first ] = forwardEdge.first;
+		int edgeWeight = prng.nextInt( 1, 20 );
+		edgeWeightMap[ forwardEdge.first ] = edgeWeight;
+		edgeWeightMap[ backwardEdge.first ] = edgeWeight;
 	}
 }
