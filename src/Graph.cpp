@@ -4,6 +4,18 @@
 std::size_t const VertexInfoTag::num = (std::size_t)&VertexInfoTag::num;
 std::size_t const EdgeInfoTag::num = (std::size_t)&EdgeInfoTag::num;
 
+Color getVertexColor( boost::default_color_type color )
+{
+	switch (color) {
+	case boost::white_color: return Color::white(); break;
+		case boost::gray_color: return Color::gray( 0.7 ); break;
+		case boost::green_color: return Color( CM_RGB, 0.0f, 1.0f, 0.0f ); break;
+		case boost::red_color: return Color( CM_RGB, 1.0f, 0.0f, 0.0f ); break;
+		case boost::black_color: return Color::black(); break;
+		default: return Color( CM_RGB, 0.0f, 0.0f, 1.0f ); break; 
+	};
+}
+
 Color getVertexColor( GraphVertexType type )
 {
 	static const Color coralColor( CM_RGB, 1.0f, 0.0f, 0.0f );

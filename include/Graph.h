@@ -58,6 +58,7 @@ typedef boost::adjacency_list<
 	EdgeProperties> Graph;
 
 typedef boost::property_map<Graph, boost::vertex_name_t>::type VertexNameMap;
+typedef boost::property_map<Graph, boost::vertex_color_t>::type VertexColorMap;
 typedef boost::property_map<Graph, boost::edge_reverse_t>::type EdgeReverseMap;
 
 typedef std::pair<Graph::edge_descriptor, bool> EdgeHandle;
@@ -65,4 +66,5 @@ typedef std::pair<Graph::edge_descriptor, bool> EdgeHandle;
 // methods:
 
 Color getVertexColor( GraphVertexType type );
+Color getVertexColor( boost::default_color_type color );
 void triangulate( Rand &prng, Graph &graph );

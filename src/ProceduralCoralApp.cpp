@@ -197,7 +197,7 @@ void ProceduralCoralApp::setupGraphSinks()
 
 void ProceduralCoralApp::separateAirAndCoral()
 {
-	boost::boykov_kolmogorov_max_flow(
+	auto flowMap = boost::boykov_kolmogorov_max_flow(
 		m_graph,
 		m_coralSourceVertex,
 		m_airSinkVertex );
@@ -232,6 +232,8 @@ void ProceduralCoralApp::drawGraph()
 	static const Color textColor( CM_RGB, 0.0f, 0.4f, 0.9f );
 	static const Font font( "Arial", 16 * graphScale );
 
+	VertexColorMap vertexColorMap = boost::get( boost::vertex_color, m_graph );
+
 	// draw edges
 	Graph::edge_iterator ei, ei_end;
 	for ( boost::tie( ei, ei_end ) = boost::edges( m_graph ); 
@@ -242,7 +244,7 @@ void ProceduralCoralApp::drawGraph()
 		const VertexInfo &sourceInfo = boost::get( VertexInfoTag(), m_graph, sourceVertex );
 		const VertexInfo &targetInfo = boost::get( VertexInfoTag(), m_graph, targetVertex );
 		gl::color( sourceInfo.type == targetInfo.type ?
-			getVertexColor( sourceInfo.type ) : edgeColor );
+			getVertexColor( vertexColorMap[ sourceVertex ] ) : edgeColor );
 		Vec2i scaledSourcePosition = sourceInfo.position * graphScale;
 		Vec2i scaledTargetPosition = targetInfo.position * graphScale;
 		gl::drawLine( scaledSourcePosition, scaledTargetPosition );
@@ -255,7 +257,7 @@ void ProceduralCoralApp::drawGraph()
 		vi != vi_end; ++vi ) 
 	{
 		const VertexInfo &vertexInfo = boost::get( VertexInfoTag(), m_graph, *vi );
-		gl::color( getVertexColor( vertexInfo.type ) );
+		gl::color( getVertexColor( vertexColorMap[ *vi ] ) );
 		Vec2i scaledPosition = vertexInfo.position * graphScale;
 		gl::drawSolidCircle( scaledPosition, scaledRadius );
 		if (m_drawLabels) {
