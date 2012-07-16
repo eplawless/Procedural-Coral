@@ -13,6 +13,9 @@ private: // methods
 	void setupGraph();
 	void setupGraphSinks();
 	void separateAirAndCoral();
+	void removeAir();
+	void removeVertex(Graph::vertex_descriptor vertex);
+	void removeReverseEdges();
 	void drawCarletonLogo();
 	void drawGraph();
 public: // methods
@@ -143,6 +146,22 @@ void ProceduralCoralApp::setupGraph()
 
 	// separate air/coral
 	separateAirAndCoral();
+
+	removeAir();
+
+	// remove source
+	vertexNameMap = boost::get( boost::vertex_name_t(), m_graph );
+	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
+		vi != vi_end; ++vi ) 
+	{
+		if ( vertexNameMap[ *vi ] == "CoralSource" ) {
+			removeVertex( *vi );
+			break;
+		}
+	}
+
+
+	removeReverseEdges();
 }
 
 void ProceduralCoralApp::setupGraphSinks()
@@ -197,7 +216,7 @@ void ProceduralCoralApp::setupGraphSinks()
 
 void ProceduralCoralApp::separateAirAndCoral()
 {
-	auto flowMap = boost::boykov_kolmogorov_max_flow(
+	boost::boykov_kolmogorov_max_flow(
 		m_graph,
 		m_coralSourceVertex,
 		m_airSinkVertex );
@@ -244,7 +263,7 @@ void ProceduralCoralApp::drawGraph()
 		const VertexInfo &sourceInfo = boost::get( VertexInfoTag(), m_graph, sourceVertex );
 		const VertexInfo &targetInfo = boost::get( VertexInfoTag(), m_graph, targetVertex );
 		gl::color( sourceInfo.type == targetInfo.type ?
-			getVertexColor( vertexColorMap[ sourceVertex ] ) : edgeColor );
+			getVertexColor( sourceInfo.type ) : edgeColor );
 		Vec2i scaledSourcePosition = sourceInfo.position * graphScale;
 		Vec2i scaledTargetPosition = targetInfo.position * graphScale;
 		gl::drawLine( scaledSourcePosition, scaledTargetPosition );
@@ -257,7 +276,7 @@ void ProceduralCoralApp::drawGraph()
 		vi != vi_end; ++vi ) 
 	{
 		const VertexInfo &vertexInfo = boost::get( VertexInfoTag(), m_graph, *vi );
-		gl::color( getVertexColor( vertexColorMap[ *vi ] ) );
+		gl::color( getVertexColor( vertexInfo.type ) );
 		Vec2i scaledPosition = vertexInfo.position * graphScale;
 		gl::drawSolidCircle( scaledPosition, scaledRadius );
 		if (m_drawLabels) {
@@ -300,5 +319,80 @@ void ProceduralCoralApp::prepareSettings( Settings *settings )
 	settings->setResizable( false );
 	settings->setTitle( "Procedural Coral - Eric Lawless" );
 }
+
+void ProceduralCoralApp::removeAir()
+{
+	typedef std::vector<Graph::vertex_descriptor> VertexList;
+
+	VertexColorMap vertexColorMap = boost::get( boost::vertex_color, m_graph );
+	VertexList verticesToRemove;
+
+	// mark vertices to remove
+	Graph::vertex_iterator vi, vi_end;
+	for ( boost::tie( vi, vi_end ) = boost::vertices( m_graph );
+		vi != vi_end; ++vi )
+	{
+		// don't remove coral vertices
+		if ( vertexColorMap[ *vi ] == boost::black_color ) {
+			continue;
+		}
+
+		// mark vertex to be removed
+		verticesToRemove.push_back( *vi );
+	}
+
+	// remove vertices
+	VertexList::reverse_iterator it, it_end;
+	for ( it = verticesToRemove.rbegin(), it_end = verticesToRemove.rend();
+		it != it_end; ++it )
+	{
+		removeVertex( *it );
+	}
+}
+
+void ProceduralCoralApp::removeVertex( Graph::vertex_descriptor vertex )
+{
+	typedef std::vector<Graph::edge_descriptor> EdgeList;
+
+	auto sourceOutEdges = boost::out_edges( vertex, m_graph );
+	auto sourceInEdges = boost::in_edges( vertex, m_graph );
+	auto out_ei = sourceOutEdges.first;
+	auto out_ei_end = sourceOutEdges.second;
+	auto in_ei = sourceInEdges.first;
+	auto in_ei_end = sourceInEdges.second;
+
+	EdgeList edgesToRemove;
+	int numInEdges = std::distance( in_ei, in_ei_end );
+	int numOutEdges = std::distance( out_ei, out_ei_end );
+	edgesToRemove.reserve( numInEdges + numOutEdges );
+
+	// get the edges to remove
+	while ( out_ei != out_ei_end ) {
+		edgesToRemove.push_back( *out_ei );
+		++out_ei;
+	}
+	while ( in_ei != in_ei_end ) {
+		edgesToRemove.push_back( *in_ei );
+		++in_ei;
+	}
+
+	// remove edges
+	EdgeList::iterator it, it_end = edgesToRemove.end();
+	for ( it = edgesToRemove.begin(); it != it_end; ++it ) {
+		auto source = boost::source( *it, m_graph );
+		auto target = boost::target( *it, m_graph );
+		boost::remove_edge( source, target, m_graph );
+	}
+
+	// remove vertex
+	boost::remove_vertex( vertex, m_graph );
+}
+
+void ProceduralCoralApp::removeReverseEdges()
+{
+}
+
+
+
 
 CINDER_APP_BASIC( ProceduralCoralApp, RendererGl( RendererGl::AA_MSAA_8 ) )

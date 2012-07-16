@@ -12,7 +12,7 @@ typedef std::pair<int, int> Edge;
 typedef boost::adjacency_list_traits <
 	boost::vecS, 
 	boost::vecS, 
-	boost::directedS >
+	boost::bidirectionalS >
 	Traits;
 
 // vertex properties
@@ -53,7 +53,7 @@ typedef boost::property<boost::edge_capacity_t, int,
 typedef boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
-	boost::directedS,
+	boost::bidirectionalS,
 	VertexProperties,
 	EdgeProperties> Graph;
 
